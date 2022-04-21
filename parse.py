@@ -6,6 +6,9 @@ stored within the filename into python objects for downstream processing.
 Author(s):
 Benjamin A. Barad
 Alexander M. Wolff
+
+Modified for HIV-1 CH505TF Env
+Ashley L. Bennett
 """
 from numpy import load
 from scipy import stats
@@ -33,31 +36,56 @@ def parse(filename):
         return parse_tpkl_2(filename)
     elif filename.endswith("dat"):
         return parse_dat(filename)
+    elif filename.endswith("chi"):
+        return parse_dat(filename)
+    elif filename.endswith("csv"):
+        return parse_dat(filename)
     else:
-        raise TypeError('scattering data can only be read from the following filetypes *.tpkl, *.dat')
+        raise TypeError('scattering data can only be read from the following filetypes *.tpkl, *.dat, *.chi, *.csv')
 
-def parse_dat(filename):
+def parse_dat(filename, delim=',', header=0):
     """
-    A function to parse flat text files, with columns separated by spaces.
+    A function to parse flat text files, with columns. It is assumed that input file contains 3 columns for
+    Q, I, and std_I. If a file with fewer columns is loaded, there will be NaNs in the empty column of the
+    returned data set. 
     
     Parameters:
-    filename (str): path of file to be analyzed
+    ------------
+    filename : (str) 
+        Path of file to be analyzed
+    
+    delim (optional) : str
+        Delimitter in data file to be parsed. Default value is comma (','). 
+        
+    colnames (optional) : list
+        List of column names of input data file. Default value is ['q', 'I', sigI'].
+        
+    header (optional) : int
+        Row number containing the header information in the input file. Can accept integer or None values. 
+        Default value is 0. 
+    
     
     Returns:
     Trace:custom object built to hold a single scattering curve and
     associated values
     """
-    data = read_table(filename, delimiter="    ", engine='python', skiprows=1, names=['q','I','sigI'])
+    # load curve
+    data = read_table(filename, delimiter=delim, engine='python',
+                      names=['q', 'I', 'sigI'], header=header)
+    # get Q
     q = data.q
+    
+    # get I
     SA = data.I
+    
+    # get std_I
     sigSA = data.sigI
+    
+    # set empty columns
     S = np.empty_like(data.q)
     sigS = np.empty_like(data.q)
     Nj = np.empty_like(data.q)
-    # return q,SA,sigSA
-    # sigS = data.sigI
-    # S = data.I
-    # Nj = data.q
+    
     return Trace(q, sigS, S, sigSA, SA, Nj)
 
 
